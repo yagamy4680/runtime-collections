@@ -1,0 +1,24 @@
+#!/bin/bash
+NODENV_ROOT="/root/.nodenv"
+NODENV_ROOT_BAK="/tmp/.nodenv"
+NPM_ROOT="/root/.npm"
+FOREVER_ROOT="/root/.forever"
+
+[ "" != "$(mount | grep "$NODENV_ROOT")" ] && umount $NODENV_ROOT
+
+rm -rf $NODENV_ROOT
+rm -rf $NODENV_ROOT_BAK
+SKIP_CLEANUP=true SKIP_COPY_TO_REPO=true /opt/runtime-collections/scripts/install_nodejs 0.10.38
+
+cp $NODENV_ROOT $NODENV_ROOT_BAK -R
+rm -rf $NPM_ROOT
+rm -rf $FOREVER_ROOT
+SKIP_BUILD=true SKIP_CLEANUP=true /opt/runtime-collections/scripts/install_nodejs 0.10.38 LiveScript@1.2.0,coffee-script@1.9.3,forever@0.14.2
+
+rm -rf $NODENV_ROOT
+cp $NODENV_ROOT_BAK $NODENV_ROOT -R
+rm -rf $NPM_ROOT
+rm -rf $FOREVER_ROOT
+SKIP_BUILD=true SKIP_CLEANUP=true /opt/runtime-collections/scripts/install_nodejs 0.10.38 livescript@1.4.0,coffee-script@1.9.3,forever@0.14.2
+
+rm -rf $NODENV_ROOT

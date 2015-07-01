@@ -1,0 +1,93 @@
+#!/bin/bash
+
+[[ $EUID -ne 0 ]] && echo "the script must be run as root" && exit 1
+
+CURRENT=$(pwd)
+TMP=$(dirname $0)
+source ${TMP}/funcs
+
+VERSION=$1
+MODULES=$2
+[ "" == "${VERSION}" ] && echo "please specify version of nodejs to be installed" && exit 1
+
+# Initiate all OS_XXX variables
+#
+initiateVariables
+
+rm -rf /root/.npm/
+rm -f /root/.node-version
+
+if [ "true" == "${SKIP_BUILD}" ]; then
+	echo "skip build"
+	eval "$(nodenv init -)"
+else
+	# Make sure /root/.nodenv doesn't exist
+	#
+	[ -d "${RC_NODENV_ROOT}" ] && echo "${RC_NODENV_ROOT} exists, please remove it before installation" && exit 1
+
+	# Install nodenv
+	#
+	cd /root
+	git clone https://github.com/OiNutter/nodenv.git ${RC_NODENV_ROOT}
+	eval "$(nodenv init -)"
+	git clone git://github.com/OiNutter/node-build.git $(nodenv root)/plugins/node-build
+
+	# Make sure the version of nodejs exists.
+	#
+	[ "" == "$(nodenv install -l | grep $VERSION)" ] && echo "$VERSION is unavailable in nodenv-build" && cleanup && exit 1
+
+	# Default configure/compile options
+	#
+	NODEJS_CONFIGURE_OPTS="--shared-zlib"
+	NODEJS_CFLAGS=""
+	NODEJS_CXXFLAGS=""
+
+	# Prepare installation script
+	#
+	TMP=$(mktemp)
+
+	NODE_BUILD_CACHE_PATH=/tmp \
+		CONFIGURE_OPTS="${NODEJS_CONFIGURE_OPTS} ${CONFIGURE_OPTS}" \
+		MAKE_OPTS="-j$OS_CPUS" \
+		CFLAGS="${NODEJS_CFLAGS} ${CFLAGS}" \
+		CXXFLAGS="${NODEJS_CXXFLAGS} ${CXXFLAGS}" \
+		nodenv install $VERSION
+	[ "0" != "$?" ] && echo "failed to build nodejs $VERSION" && exit 1
+fi
+
+# Switch to the built version
+#
+nodenv local $VERSION
+[ "0" != "$?" ] && echo "failed to switch to nodejs $VERSION" && exit 1
+
+if [ "" != "${MODULES}" ]; then
+	MODULES=($(echo $MODULES | tr ',' '\n'))
+	for m in "${MODULES[@]}"
+	do
+		M_NAME=$(echo $m | awk -F '@' '{print $1}')
+		M_VERSION=$(echo $m | awk -F '@' '{print $2}')
+		echo "installing $M_NAME (version: $M_VERSION)"
+		[ "" == "${M_VERSION}" ] && npm install -g ${M_NAME} || npm install -g ${M_NAME}@${M_VERSION}
+		nodenv rehash
+	done
+fi
+
+# Copy the .nodenv to runtime-collections repository
+#
+if [ "true" == "${SKIP_COPY_TO_REPO}" ]; then
+	echo "ignore to copy .nodenv to runtime-collections dir"
+else
+	# Initiate runtime-collection directories
+	#
+	initiateDirectories
+	mkdir -p $RC_NODE_WORKDIR
+
+	# Copy to runtime-collections repository
+	#
+	echo "copying to $RC_NODE_WORKDIR ..."
+	cp $RC_NODENV_ROOT $RC_NODE_WORKDIR -R
+fi
+
+# Clean-up all building results
+#
+[ "true" != "${SKIP_CLEANUP}" ] && cleanup

@@ -1,0 +1,53 @@
+#!/bin/bash
+
+function DBG {
+	[ "true" == "${SCRIPT_DEBUG}" ] && echo -e $1
+}
+
+
+function cleanup {
+	rm -rf $RC_NODENV_ROOT
+}
+
+function initiateDirectories {
+	mkdir -p $RC_NODE_RUNTIME_DIR
+
+	DATE=$(date +%Y%m%d)
+	for c in {a..z}
+	do
+		export RC_NODE_WORKDIR="${RC_NODE_RUNTIME_DIR}/${DATE}${c}"
+		[ -d $RC_NODE_WORKDIR ] || break
+	done
+
+	DBG "RC_NODE_WORKDIR = $RC_NODE_WORKDIR"
+}
+
+function initiateVariables {
+	export OS_KERNEL=$(uname -s)
+	export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}')
+	export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}')
+	export OS_ARCH=$(uname -m)
+	export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}-${OS_DIST_CODENAME}"
+	export OS_CPUS=$(lscpu | grep "^CPU(s)" | awk '{print $2}')
+
+	export RC_NODENV_ROOT="/root/.nodenv"
+	export RC_ROOT="/opt/runtime-collections"
+	export RC_NODE_ROOT="${RC_ROOT}/nodejs"
+	export RC_NODE_RUNTIME_DIR="${RC_NODE_ROOT}/runtimes/${OS_NAME}/${OS_ARCH}"
+
+	DBG "OS_KERNEL = $OS_KERNEL"
+	DBG "OS_DIST_NAME = $OS_DIST_NAME"
+	DBG "OS_DIST_CODENAME = $OS_DIST_CODENAME"
+	DBG "OS_ARCH = $OS_ARCH"
+	DBG "OS_CPUS = $OS_CPUS"
+
+	DBG "RC_NODENV_ROOT = $RC_NODENV_ROOT"
+	DBG "RC_ROOT = $RC_ROOT"
+	DBG "RC_ROOT = $RC_ROOT"
+	DBG "RC_ROOT = $RC_ROOT"
+	DBG "RC_ROOT = $RC_ROOT"
+	DBG "RC_ROOT = $RC_ROOT"
+
+	export PATH="${RC_NODENV_ROOT}/bin:$PATH"
+}
+
