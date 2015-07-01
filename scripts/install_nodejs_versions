@@ -1,24 +1,40 @@
 #!/bin/bash
-NODENV_ROOT="/root/.nodenv"
-NODENV_ROOT_BAK="/tmp/.nodenv"
-NPM_ROOT="/root/.npm"
-FOREVER_ROOT="/root/.forever"
 
-[ "" != "$(mount | grep "$NODENV_ROOT")" ] && umount $NODENV_ROOT
+function install {
+	VERSION=$1
+	BACKUP_DIR="/tmp/.nodenv"
+	CURRENT=$(pwd)
+	cd $(dirname $0)
+	SCRIPT_DIR=$(pwd)
+	cd $CURRENT
 
-rm -rf $NODENV_ROOT
-rm -rf $NODENV_ROOT_BAK
-SKIP_CLEANUP=true SKIP_COPY_TO_REPO=true /opt/runtime-collections/scripts/install_nodejs 0.10.38
+	source $SCRIPT_DIR/funcs
+	initiateVariables
 
-cp $NODENV_ROOT $NODENV_ROOT_BAK -R
-rm -rf $NPM_ROOT
-rm -rf $FOREVER_ROOT
-SKIP_BUILD=true SKIP_CLEANUP=true /opt/runtime-collections/scripts/install_nodejs 0.10.38 LiveScript@1.2.0,coffee-script@1.9.3,forever@0.14.2
+	[ "" != "$(mount | grep "$RC_NODENV_ROOT")" ] && umount $RC_NODENV_ROOT
 
-rm -rf $NODENV_ROOT
-cp $NODENV_ROOT_BAK $NODENV_ROOT -R
-rm -rf $NPM_ROOT
-rm -rf $FOREVER_ROOT
-SKIP_BUILD=true SKIP_CLEANUP=true /opt/runtime-collections/scripts/install_nodejs 0.10.38 livescript@1.4.0,coffee-script@1.9.3,forever@0.14.2
+	rm -rf $RC_NODENV_ROOT
+	rm -rf $BACKUP_DIR
+	SKIP_CLEANUP=true SKIP_COPY_TO_REPO=true ${SCRIPT_DIR}/install_nodejs $VERSION
 
-rm -rf $NODENV_ROOT
+	cp $RC_NODENV_ROOT $BACKUP_DIR -R
+	rm -f $RC_NODENV_VERSION_FILE
+	rm -rf $RC_NODENV_NPM_DIR
+	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/install_nodejs $VERSION LiveScript@1.2.0,coffee-script@1.9.3,forever@0.14.2
+
+	rm -rf $RC_NODENV_ROOT
+	cp $BACKUP_DIR $RC_NODENV_ROOT -R
+	rm -f $RC_NODENV_VERSION_FILE
+	rm -rf $RC_NODENV_NPM_DIR
+	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/install_nodejs $VERSION livescript@1.4.0,coffee-script@1.9.3,forever@0.14.2
+
+	rm -rf $RC_NODENV_ROOT
+	rm -rf $RC_NODENV_NPM_DIR
+	rm -f $RC_NODENV_VERSION_FILE
+}
+
+# install 0.10.38
+# install 0.11.16
+# install 0.12.4
+# install iojs-1.8.2
+install iojs-2.2.1

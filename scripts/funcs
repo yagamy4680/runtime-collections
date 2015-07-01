@@ -31,6 +31,8 @@ function initiateVariables {
 	export OS_CPUS=$(lscpu | grep "^CPU(s)" | awk '{print $2}')
 
 	export RC_NODENV_ROOT="/root/.nodenv"
+	export RC_NODENV_VERSION_FILE="/root/.node-version"
+	export RC_NODENV_NPM_DIR="/root/.npm"
 	export RC_ROOT="/opt/runtime-collections"
 	export RC_NODE_ROOT="${RC_ROOT}/nodejs"
 	export RC_NODE_RUNTIME_DIR="${RC_NODE_ROOT}/runtimes/${OS_NAME}/${OS_ARCH}"

@@ -14,8 +14,8 @@ MODULES=$2
 #
 initiateVariables
 
-rm -rf /root/.npm/
-rm -f /root/.node-version
+rm -f $RC_NODENV_VERSION_FILE
+rm -rf $RC_NODENV_NPM_DIR
 
 if [ "true" == "${SKIP_BUILD}" ]; then
 	echo "skip build"
