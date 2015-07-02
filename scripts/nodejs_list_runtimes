@@ -1,0 +1,62 @@
+#!/bin/bash
+# 
+CURRENT=$(pwd)
+TMP=$(dirname $0)
+source ${TMP}/funcs
+
+# Initiate all OS_XXX variables
+#
+initiateVariables
+
+[ ! -d "${RC_NODE_RUNTIME_DIR}" ] && echo "no nodejs runtimes (${RC_NODE_RUNTIME_DIR} doesn't exist)" && exit 1
+
+CONFIGS=$(find ${RC_NODE_RUNTIME_DIR} -maxdepth 2 -type f -name "${RC_NODE_CONFIG_FILE}")
+[ "" == "${CONFIGS}" ] && echo "no nodejs runtimes avaailable at ${RC_NODE_RUNTIME_DIR}" && exit 1
+
+[ "latest" == "$1" ] && echo "$(basename $(dirname $(echo $CONFIGS | tr ' ' '\n' | sort | tail -n1)))" && exit 0
+
+CONFIGS=(${CONFIGS})
+TMP0=$(mktemp)
+TMP1=$(mktemp)
+TMP2=$(mktemp)
+TMP3=$(mktemp)
+
+for c in "${CONFIGS[@]}"
+do
+	CONFIG_FILE=$c
+	PACKAGE=$(basename $(dirname $CONFIG_FILE))
+	NODEJS_VERSION=$(cat $c | grep "^nodejs" | grep "version" | awk -F '\t' '{print $3}')
+	LS_VERSION=$(cat $CONFIG_FILE | grep -i "livescript" | awk -F '\t' '{print $3}')
+	echo "$NODEJS_VERSION,$PACKAGE,$c" >> $TMP0
+	echo "$NODEJS_VERSION" >> $TMP1
+done
+
+cat $TMP0 | sort > $TMP2
+cat $TMP1 | sort -u > $TMP3
+
+NODEJS_VERSIONS=($(cat $TMP3))
+
+echo -e "\n${OS_NAME}"
+echo -e "\t${OS_ARCH}"
+for v in "${NODEJS_VERSIONS[@]}"
+do
+	PACKAGES=($(cat $TMP2 | grep $v))
+	echo -e "\t\t$(YELLOW ${v})"
+	for p in "${PACKAGES[@]}"
+	do
+		PACKAGE=$(echo $p | awk -F ',' '{print $2}')
+		CONFIG_FILE=$(echo $p | awk -F ',' '{print $3}')
+		LS_VERSION=$(cat $CONFIG_FILE | grep -i "livescript" | awk -F '\t' '{print $3}')
+		CONFIGURE_OPTS=$(cat $CONFIG_FILE | grep "^CONFIGURE_OPTS" | awk '{print $2}' | sed 's/^"//g' | sed 's/"$//g' | sed 's/^ *//g' | sed 's/ *$//g')
+		CFLAGS=$(cat $CONFIG_FILE | grep "^CFLAGS" | awk '{print $2}' | sed 's/^"//g' | sed 's/"$//g' | sed 's/^ *//g' | sed 's/ *$//g')
+		CXXFLAGS=$(cat $CONFIG_FILE | grep "^CXXFLAGS" | awk '{print $2}' | sed 's/^"//g' | sed 's/"$//g' | sed 's/^ *//g' | sed 's/ *$//g')
+		OUTPUT="\t\t\t$(LIGHT_GREEN ${PACKAGE}) (lsc: ${LS_VERSION})"
+		[ "" == "${CONFIGURE_OPTS}" ] || OUTPUT="${OUTPUT}, CONFIGURE_OPTS: $(GRAY ${CONFIGURE_OPTS})"
+		[ "" == "${CFLAGS}" ] || OUTPUT="${OUTPUT}, CFLAGS: $(GRAY ${CFLAGS})"
+		[ "" == "${CXXFLAGS}" ] || OUTPUT="${OUTPUT}, CXXFLAGS: $(GRAY ${CXXFLAGS})"
+		echo -e $OUTPUT
+	done
+done
+
+echo ""
+rm -f $TMP0 $TMP1 $TMP2 $TMP3

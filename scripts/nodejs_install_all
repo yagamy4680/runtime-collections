@@ -15,26 +15,26 @@ function install {
 
 	rm -rf $RC_NODENV_ROOT
 	rm -rf $BACKUP_DIR
-	SKIP_CLEANUP=true SKIP_COPY_TO_REPO=true ${SCRIPT_DIR}/install_nodejs $VERSION
+	SKIP_CLEANUP=true SKIP_COPY_TO_REPO=true ${SCRIPT_DIR}/nodejs_install $VERSION
 
 	cp $RC_NODENV_ROOT $BACKUP_DIR -R
 	rm -f $RC_NODENV_VERSION_FILE
 	rm -rf $RC_NODENV_NPM_DIR
-	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/install_nodejs $VERSION LiveScript@1.2.0,coffee-script@1.9.3,forever@0.14.2
+	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/nodejs_install $VERSION LiveScript@1.2.0,coffee-script@1.9.3,pm2@0.14.3
 
 	rm -rf $RC_NODENV_ROOT
 	cp $BACKUP_DIR $RC_NODENV_ROOT -R
 	rm -f $RC_NODENV_VERSION_FILE
 	rm -rf $RC_NODENV_NPM_DIR
-	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/install_nodejs $VERSION livescript@1.4.0,coffee-script@1.9.3,forever@0.14.2
+	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/nodejs_install $VERSION livescript@1.4.0,coffee-script@1.9.3,pm2@0.14.3
 
 	rm -rf $RC_NODENV_ROOT
 	rm -rf $RC_NODENV_NPM_DIR
 	rm -f $RC_NODENV_VERSION_FILE
 }
 
-# install 0.10.38
-# install 0.11.16
-# install 0.12.4
-# install iojs-1.8.2
+install 0.10.38
+install 0.11.16
+install 0.12.4
+install iojs-1.8.2
 install iojs-2.2.1

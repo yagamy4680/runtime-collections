@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+source $(dirname $0)/funcs
+initiateVariables
+
+RUNTIME=$1
+
+[ "" == "${RUNTIME}" ] && echo "please specify one of following packages to mount: " && $(dirname $0)/nodejs_list_runtimes && exit 1
+[ -f "${RC_NODE_RUNTIME_DIR}/${RUNTIME}/config" ] && echo "${RUNTIME} doesn't exist at ${RC_NODE_RUNTIME_DIR}" && exit 1
+
+VERSION=$(cat ${RC_NODE_RUNTIME_DIR}/${RUNTIME}/${RC_NODE_CONFIG_FILE} | grep "^nodejs" |  grep version | awk -F'\t' '{print $3}')
+
+if [ "true" == "${MOUNT_DIR}" ]; then
+	if [ ! -d "${RC_NODENV_ROOT}" ]; then
+		mkdir -p ${RC_NODENV_ROOT}
+		mount -o bind ${RC_NODE_RUNTIME_DIR}/${RUNTIME}/.nodenv ${RC_NODENV_ROOT}
+		echo "successfully mount ${RUNTIME} to ${RC_NODENV_ROOT}"
+	else
+		if [ "" == "$(mount | grep ${RC_NODENV_ROOT})" ]; then
+			rm -rf ${RC_NODENV_ROOT}
+			mkdir -p ${RC_NODENV_ROOT}
+			mount -o bind ${RC_NODE_RUNTIME_DIR}/${RUNTIME}/.nodenv ${RC_NODENV_ROOT}
+			echo "successfully delete existed ${RC_NODENV_ROOT}, and remount ${RUNTIME} to ${RC_NODENV_ROOT}"
+		else
+			umount ${RC_NODENV_ROOT}
+			mount -o bind ${RC_NODE_RUNTIME_DIR}/${RUNTIME}/.nodenv ${RC_NODENV_ROOT}
+			echo "successfully umount ${RC_NODENV_ROOT}, and remount ${RUNTIME} to ${RC_NODENV_ROOT}"
+		fi
+	fi
+else
+	# Only change /root/.yrc_profile settings, and ask user to re-login root
+	# to enable the new nodejs runtime.
+	#
+	[ ! -f "${RC_PROFILE}" ] && echo "${RC_PROFILE} does not exist" && exit 1
+	sed -i "/nodejs_version/d" ${RC_PROFILE}
+	sed -i "/nodejs_runtime/d" ${RC_PROFILE}
+	echo -e "nodejs_version\t${VERSION}" >> ${RC_PROFILE}
+	echo -e "nodejs_runtime\t${RUNTIME}" >> ${RC_PROFILE}
+	echo -e "please re-login root to enable $(LIGHT_GREEN ${RUNTIME}) runtime, e.g. exit, and then sudo su"
+fi
