@@ -41,10 +41,10 @@ function initiateDirectories {
 }
 
 function initiateVariables {
-	export OS_KERNEL=$(uname -s)
-	export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}')
-	export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}')
-	export OS_ARCH=$(uname -m)
+	export OS_KERNEL=$(uname -s | tr "[A-Z]" "[a-z]")
+	export OS_DIST_NAME=$(lsb_release -a 2>/dev/null | grep "^Distributor" | awk '{print $3}' | tr "[A-Z]" "[a-z]")
+	export OS_DIST_CODENAME=$(lsb_release -a 2>/dev/null | grep "^Codename" | awk '{print $2}' | tr "[A-Z]" "[a-z]")
+	export OS_ARCH=$(uname -m | tr "[A-Z]" "[a-z]")
 	export OS_NAME="${OS_KERNEL}-${OS_DIST_NAME}-${OS_DIST_CODENAME}"
 	export OS_CPUS=$(lscpu | grep "^CPU(s)" | awk '{print $2}')
 

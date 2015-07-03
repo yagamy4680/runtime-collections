@@ -20,13 +20,13 @@ function install {
 	cp $RC_NODENV_ROOT $BACKUP_DIR -R
 	rm -f $RC_NODENV_VERSION_FILE
 	rm -rf $RC_NODENV_NPM_DIR
-	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/nodejs_install $VERSION LiveScript@1.2.0,coffee-script@1.9.3,pm2@0.14.3
+	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/nodejs_install $VERSION LiveScript@1.2.0
 
 	rm -rf $RC_NODENV_ROOT
 	cp $BACKUP_DIR $RC_NODENV_ROOT -R
 	rm -f $RC_NODENV_VERSION_FILE
 	rm -rf $RC_NODENV_NPM_DIR
-	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/nodejs_install $VERSION livescript@1.4.0,coffee-script@1.9.3,pm2@0.14.3
+	SKIP_BUILD=true SKIP_CLEANUP=true ${SCRIPT_DIR}/nodejs_install $VERSION livescript@1.4.0
 
 	rm -rf $RC_NODENV_ROOT
 	rm -rf $RC_NODENV_NPM_DIR

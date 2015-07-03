@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd /tmp
+wget http://download.opensuse.org/repositories/isv:ownCloud:desktop/xUbuntu_14.04/Release.key
+apt-key add - < Release.key
+echo 'deb http://download.opensuse.org/repositories/isv:/ownCloud:/desktop/xUbuntu_14.04/ /' >> /etc/apt/sources.list.d/owncloud-client.list
+apt-get update
+apt-get install owncloud-client -y
