@@ -14,6 +14,10 @@ MODULES=$2
 #
 initiateVariables
 
+# Make sure all prerequisites are installed before build
+#
+checkBuildPrerequisites
+
 rm -f $RC_NODENV_VERSION_FILE
 rm -rf $RC_NODENV_NPM_DIR
 

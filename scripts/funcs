@@ -84,6 +84,24 @@ function initiateVariables {
 	export RC_NODE_BUILD_LOG="build.log"
 }
 
+function checkBuildPrerequisites {
+	[ "" == "$(which pkg-config)" ] && echo "please install pkg-config tool" && exit 1
+
+	LIBRARIES=("zlib apt-get libz-dev")
+
+	for x in "${lib[@]}"
+	do
+		LIB=$(echo $x | awk '{print $1}')
+		INSTALLATION=$(echo $x | awk '{print $2}')
+		PACKAGE=$(echo $x | awk '{print $3}')
+		
+		if [ "0" != "$(pkg-config --exists ${lib})" ]; then 
+			[ "apt-get" == "${INSTALLATION}" ] && echo "missing ${LIB}, please install it: ${INSTALLATION} -y ${PACKAGE}" && exit 1
+			echo "missing ${LIB}" && exit 1
+		fi
+	done
+}
+
 function storeSettings {
 	CONFIG_FILE="${RC_NODE_WORKDIR}/${RC_NODE_CONFIG_FILE}"
 	CONFIG_JSON_FILE="${RC_NODE_WORKDIR}/${RC_NODE_CONFIG_JSON}"

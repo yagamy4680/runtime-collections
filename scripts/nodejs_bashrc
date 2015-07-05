@@ -19,7 +19,8 @@ cd ~
 #
 export PATH="/root/.nodenv/bin:$PATH"
 eval "$(nodenv init -)"
-nodenv local ${NODE_VERSION}
+# nodenv local ${NODE_VERSION}
+nodenv global ${NODE_VERSION}
 
 RUNTIME_PATH=$(dirname $(mount | grep .nodenv | awk '{print $1}'))
 
