@@ -1,0 +1,54 @@
+#!/bin/bash
+
+function install_module {
+	MODULE=$1
+	VERSION=$2
+	CURRENT=$(pwd)
+
+	[ "" == "${YRC_ROOT}" ] && echo "YRC_ROOT isn't specified" && exit 1
+	[ "" == "${YRC_NODE_VERSION}" ] && echo "YRC_NODE_VERSION isn't specified" && exit 1
+	[ "" == "${OS_NAME}" ] && echo "OS_NAME isn't specified" && exit 1
+	[ "" == "${OS_ARCH}" ] && echo "OS_ARCH isn't specified" && exit 1
+
+	TMP=$(mktemp)
+	npm view ${MODULE} > ${TMP}
+	EXIT_CODE=$?
+	[ "0" != "${EXIT_CODE}" ] && echo "failed to retrieve basic information of module [${MODULE}]" && exit 1
+
+	LATEST_VERSION=$(cat ${TMP} | jq .version | sed 's/"//g')
+	rm -f ${TMP}
+
+	[ "" == "${VERSION}" ] && VERSION=${LATEST_VERSION}
+
+	MODULE_DIR="${YRC_ROOT}/nodejs/modules/${OS_NAME}/${OS_ARCH}/${YRC_NODE_VERSION}/${MODULE}/${VERSION}"
+	MODULE_INSTALL_CMD="npm install ${MODULE}@${VERSION}"
+
+	[ -d "${MODULE_DIR}" ] && echo "${MODULE_DIR} exists" && exit 0
+
+	mkdir -p ${MODULE_DIR}
+	cd /tmp
+
+	echo "running: ${MODULE_INSTALL_CMD}"
+	${MODULE_INSTALL_CMD} > /dev/null
+	EXIT_CODE=$?
+
+	[ "0" != "${EXIT_CODE}" ] && echo "failed to install ${MODULE}@${VERSION}" && exit 1
+
+	cp /tmp/node_modules/${MODULE}/* ${MODULE_DIR} -R
+	rm -rf /tmp/node_modules/${MODULE}
+	
+	echo "install ${MODULE} (version: ${VERSION}) at ${MODULE_DIR} successfully"
+}
+
+
+source $(dirname $0)/funcs
+initiateOsVariables
+
+[ "" == "$(which npm)" ] && echo "npm is not found" && exit 1
+
+for p in "$@"
+do
+	MODULE=$(echo $p | awk -F'@' '{print $1}')
+	VERSION=$(echo $p | awk -F'@' '{print $2}')
+	install_module ${MODULE} ${VERSION}
+done
