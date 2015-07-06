@@ -20,12 +20,12 @@ nodejs_runtime	${RUNTIME}
 nodejs_module_profile	${MODULE_PROFILE}
 EOF
 
-sed -i '/\/nodejs_bashrc/d' /root/.bashrc
+sed -i '/mount_nodejs/d' /root/.bashrc
 CURRENT=$(pwd)
 cd $(dirname $0)
 cd ..
 cat <<EOF >> "/root/.bashrc"
-RC_ROOT=$(pwd) eval "\$(cat $(pwd)/scripts/nodejs_bashrc)"
+RC_ROOT=${RC_ROOT} eval "source ${RC_ROOT}/scripts/funcs_bashrc && mount_nodejs"
 EOF
 
 echo -e "hooked with runtime $(LIGHT_GREEN ${RUNTIME}) (nodejs: $(YELLOW ${VERSION})) with module profile $(GRAY ${MODULE_PROFILE})"

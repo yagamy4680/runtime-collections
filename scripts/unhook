@@ -4,6 +4,6 @@ source $(dirname $0)/funcs
 initiateVariables
 
 rm -f ${RC_PROFILE}
-sed -i '/\/nodejs_bashrc/d' /root/.bashrc
+sed -i '/mount_nodejs/d' /root/.bashrc
 umount ${RC_NODENV_ROOT}
 rm -rf ${RC_NODENV_ROOT}
