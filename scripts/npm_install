@@ -84,7 +84,7 @@ cd ${CURRENT_DIR}
 
 source ${RC_SCRIPT_DIR}/funcs
 
-if [ "" == "$(which npm)" ]; then
+if [ "" == "$(which npm)" ] || [ "" == "${YRC_ROOT}" ]; then
 	initiateVariables
 	[ "" == "${NODE_RUNTIME}" ] && echo "missing npm, and NODE_RUNTIME is not specified" && ${RC_SCRIPT_DIR}/nodejs_list_runtimes && exit 1
 	NEED_UNMOUNT="true"
@@ -96,10 +96,11 @@ else
 	NEED_UNMOUNT="false"
 fi
 
+CONFIG_FILE=$1
+cd ${CURRENT_DIR}
 
-
-if [ "$#" -eq "1" ] && [ -f "$1" ]; then
-	MODULES=$(cat $1 | sed -e 's/^ *//' | sed -e 's/ *$//' | sed 's/#.*$//g' | grep -v "^$" | awk '{printf "%s@%s ", $1, $2}')
+if [ "$#" -eq "1" ] && [ -e "${CONFIG_FILE}" ]; then
+	MODULES=$(cat ${CONFIG_FILE} | sed -e 's/^ *//' | sed -e 's/ *$//' | sed 's/#.*$//g' | grep -v "^$" | awk '{printf "%s@%s ", $1, $2}')
 	MODULES=($MODULES)
 	for p in "${MODULES[@]}"
 	do
