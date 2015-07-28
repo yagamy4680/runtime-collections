@@ -21,30 +21,50 @@ function install_module {
 	[ "" == "${VERSION}" ] && VERSION=${LATEST_VERSION}
 
 	MODULE_DIR="${YRC_ROOT}/nodejs/modules/${OS_NAME}/${OS_ARCH}/${YRC_NODE_VERSION}/${MODULE}/${VERSION}"
+	MODULE_INSTALL_PRE_CMD="npm config set user 0 && npm config set unsafe-perm true"
 	MODULE_INSTALL_CMD="npm install ${MODULE}@${VERSION}"
 
 	[ -d "${MODULE_DIR}" ] && echo "${MODULE_DIR} exists" && exit 0
 
-	mkdir -p ${MODULE_DIR}
 	cd /tmp
+
+	echo "running: ${MODULE_INSTALL_PRE_CMD}"
+	${MODULE_INSTALL_PRE_CMD} > /dev/null
 
 	echo "running: ${MODULE_INSTALL_CMD}"
 	${MODULE_INSTALL_CMD} > /dev/null
 	EXIT_CODE=$?
 
-	[ "0" != "${EXIT_CODE}" ] && echo "failed to install ${MODULE}@${VERSION}" && exit 1
-
-	cp /tmp/node_modules/${MODULE}/* ${MODULE_DIR} -R
-	rm -rf /tmp/node_modules/${MODULE}
-	
-	echo "install ${MODULE} (version: ${VERSION}) at ${MODULE_DIR} successfully"
+	if [ "0" != "${EXIT_CODE}" ]; then
+		echo "failed to install ${MODULE}@${VERSION}"
+	else
+		mkdir -p ${MODULE_DIR}
+		cp /tmp/node_modules/${MODULE}/* ${MODULE_DIR} -R
+		rm -rf /tmp/node_modules/${MODULE}
+		echo "install ${MODULE} (version: ${VERSION}) at ${MODULE_DIR} successfully"
+	fi
 }
 
+CURRENT=$(pwd)
+cd $(dirname $0)
+cd ..
+RC_ROOT=$(pwd)
+RC_SCRIPT_DIR="${RC_ROOT}/scripts"
+cd ${CURRENT}
 
-source $(dirname $0)/funcs
-initiateOsVariables
+source ${RC_SCRIPT_DIR}/funcs
 
-[ "" == "$(which npm)" ] && echo "npm is not found" && exit 1
+if [ "" == "$(which npm)" ]; then
+	initiateVariables
+	[ "" == "${NODE_RUNTIME}" ] && echo "missing npm, and NODE_RUNTIME is not specified" && exit 1
+	NEED_UNMOUNT="true"
+	${RC_SCRIPT_DIR}/unhook
+	NODE_RUNTIME=${NODE_RUNTIME} ${RC_SCRIPT_DIR}/hook
+	RC_ROOT=${RC_ROOT} source ${RC_SCRIPT_DIR}/funcs_bashrc && mount_nodejs
+else
+	initiateOsVariables
+	NEED_UNMOUNT="false"
+fi
 
 for p in "$@"
 do
@@ -52,3 +72,5 @@ do
 	VERSION=$(echo $p | awk -F'@' '{print $2}')
 	install_module ${MODULE} ${VERSION}
 done
+
+[ "true" == "${NEED_UNMOUNT}" ] && ${RC_SCRIPT_DIR}/unhook
