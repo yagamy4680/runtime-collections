@@ -1,5 +1,10 @@
 #!/bin/bash
 
+function INFO {
+	echo -e "\t$1"
+}
+
+
 function install_module {
 	MODULE=$1
 	VERSION=$2
@@ -10,53 +15,78 @@ function install_module {
 	[ "" == "${OS_NAME}" ] && echo "OS_NAME isn't specified" && exit 1
 	[ "" == "${OS_ARCH}" ] && echo "OS_ARCH isn't specified" && exit 1
 
-	TMP=$(mktemp)
-	npm view ${MODULE} > ${TMP}
-	EXIT_CODE=$?
-	[ "0" != "${EXIT_CODE}" ] && echo "failed to retrieve basic information of module [${MODULE}]" && exit 1
+	echo -e "installing $(LIGHT_BLUE ${MODULE}) (node-runtime: $(YELLOW ${YRC_NODE_VERSION})) :"
 
-	LATEST_VERSION=$(cat ${TMP} | jq .version | sed 's/"//g')
-	rm -f ${TMP}
+	if [ "" == "${VERSION}" ]; then
+		INFO "retrieving version information from npmjs.org"
+		TMP=$(mktemp)
+		npm view ${MODULE} > ${TMP}
+		EXIT_CODE=$?
+		[ "0" != "${EXIT_CODE}" ] && INFO "failed to retrieve basic information of module" && exit 1
 
-	[ "" == "${VERSION}" ] && VERSION=${LATEST_VERSION}
+		VERSION=$(cat ${TMP} | jq .version | sed 's/"//g')
+		rm -f ${TMP}
+	fi
+
 
 	MODULE_DIR="${YRC_ROOT}/nodejs/modules/${OS_NAME}/${OS_ARCH}/${YRC_NODE_VERSION}/${MODULE}/${VERSION}"
 	MODULE_INSTALL_PRE_CMD="npm config set user 0 && npm config set unsafe-perm true"
 	MODULE_INSTALL_CMD="npm install ${MODULE}@${VERSION}"
 
-	[ -d "${MODULE_DIR}" ] && echo "${MODULE_DIR} exists" && exit 0
-
-	cd /tmp
-
-	echo "running: ${MODULE_INSTALL_PRE_CMD}"
-	${MODULE_INSTALL_PRE_CMD} > /dev/null
-
-	echo "running: ${MODULE_INSTALL_CMD}"
-	${MODULE_INSTALL_CMD} > /dev/null
-	EXIT_CODE=$?
-
-	if [ "0" != "${EXIT_CODE}" ]; then
-		echo "failed to install ${MODULE}@${VERSION}"
+	if [ -d "${MODULE_DIR}" ]; then
+		INFO "found $(GRAY ${MODULE_DIR})"
 	else
-		mkdir -p ${MODULE_DIR}
-		cp /tmp/node_modules/${MODULE}/* ${MODULE_DIR} -R
-		rm -rf /tmp/node_modules/${MODULE}
-		echo "install ${MODULE} (version: ${VERSION}) at ${MODULE_DIR} successfully"
+		cd /tmp
+		INFO "running: ${MODULE_INSTALL_PRE_CMD}"
+		${MODULE_INSTALL_PRE_CMD} > /dev/null
+
+		INFO "running: ${MODULE_INSTALL_CMD}"
+		# ${MODULE_INSTALL_CMD} 1>/dev/null 2>&1 | awk '{printf "\t\t%s\n", $0}'
+		${MODULE_INSTALL_CMD} 2>/tmp/npm.stderr 1>/tmp/npm.stdout
+		EXIT_CODE="$?"
+
+		if [ -d "/tmp/node_modules/${MODULE}" ]; then
+			mkdir -p ${MODULE_DIR}
+			cp /tmp/node_modules/${MODULE}/* ${MODULE_DIR} -R
+			rm -rf /tmp/node_modules/${MODULE}
+			INFO "install $(LIGHT_BLUE ${MODULE}) (version: ${VERSION}) at $(GRAY ${MODULE_DIR}) successfully"
+		else
+			INFO "failed to install $(LIGHT_BLUE ${MODULE})@${VERSION}"
+			cat /tmp/npm.stderr | awk '{printf "\t\t%s\n", $0}'
+			exit 1
+		fi
 	fi
+	export MODULE_DIR
 }
 
-CURRENT=$(pwd)
+
+function install {
+	p=$1
+	MODULE=$(echo $p | awk -F'@' '{print $1}')
+	VERSION=$(echo $p | awk -F'@' '{print $2}')
+	install_module ${MODULE} ${VERSION}
+	LOCAL_DIR="${CURRENT_DIR}/node_modules/${MODULE}"
+
+	[ -d "${LOCAL_DIR}" ] && rm -rf ${LOCAL_DIR}
+	mkdir -p $(dirname ${LOCAL_DIR})
+	ln -s ${MODULE_DIR} ${LOCAL_DIR}
+	INFO "link $(GRAY ${LOCAL_DIR}) with $(GRAY ${MODULE_DIR})"
+}
+
+
+
+CURRENT_DIR=$(pwd)
 cd $(dirname $0)
 cd ..
 RC_ROOT=$(pwd)
 RC_SCRIPT_DIR="${RC_ROOT}/scripts"
-cd ${CURRENT}
+cd ${CURRENT_DIR}
 
 source ${RC_SCRIPT_DIR}/funcs
 
 if [ "" == "$(which npm)" ]; then
 	initiateVariables
-	[ "" == "${NODE_RUNTIME}" ] && echo "missing npm, and NODE_RUNTIME is not specified" && exit 1
+	[ "" == "${NODE_RUNTIME}" ] && echo "missing npm, and NODE_RUNTIME is not specified" && ${RC_SCRIPT_DIR}/nodejs_list_runtimes && exit 1
 	NEED_UNMOUNT="true"
 	${RC_SCRIPT_DIR}/unhook
 	NODE_RUNTIME=${NODE_RUNTIME} ${RC_SCRIPT_DIR}/hook
@@ -66,11 +96,20 @@ else
 	NEED_UNMOUNT="false"
 fi
 
-for p in "$@"
-do
-	MODULE=$(echo $p | awk -F'@' '{print $1}')
-	VERSION=$(echo $p | awk -F'@' '{print $2}')
-	install_module ${MODULE} ${VERSION}
-done
+
+
+if [ "$#" -eq "1" ] && [ -f "$1" ]; then
+	MODULES=$(cat $1 | sed -e 's/^ *//' | sed -e 's/ *$//' | sed 's/#.*$//g' | grep -v "^$" | awk '{printf "%s@%s ", $1, $2}')
+	MODULES=($MODULES)
+	for p in "${MODULES[@]}"
+	do
+		CURRENT_DIR=${CURRENT_DIR} install $p
+	done
+else
+	for p in "$@"
+	do
+		CURRENT_DIR=${CURRENT_DIR} install $p
+	done
+fi
 
 [ "true" == "${NEED_UNMOUNT}" ] && ${RC_SCRIPT_DIR}/unhook

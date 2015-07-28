@@ -10,6 +10,12 @@ function LIGHT_GREEN {
 	echo "${COLOR}$1${NC}"
 }
 
+function LIGHT_BLUE {
+	COLOR='\033[1;34m'
+	NC='\033[0m'
+	echo "${COLOR}$1${NC}"
+}
+
 function GRAY {
 	COLOR='\033[1;30m'
 	NC='\033[0m'
