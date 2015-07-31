@@ -96,10 +96,10 @@ else
 	NEED_UNMOUNT="false"
 fi
 
-CONFIG_FILE=$1
+[ "$#" -eq "0" ] && CONFIG_FILE="${CURRENT_DIR}/packages.conf" || CONFIG_FILE=$1
 cd ${CURRENT_DIR}
 
-if [ "$#" -eq "1" ] && [ -e "${CONFIG_FILE}" ]; then
+if [ "$2" == "" ] && [ -e "${CONFIG_FILE}" ]; then
 	MODULES=$(cat ${CONFIG_FILE} | sed -e 's/^ *//' | sed -e 's/ *$//' | sed 's/#.*$//g' | grep -v "^$" | awk '{printf "%s@%s ", $1, $2}')
 	MODULES=($MODULES)
 	for p in "${MODULES[@]}"
