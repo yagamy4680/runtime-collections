@@ -27,6 +27,7 @@ function mount_nodejs {
 	LS_VERSION=$(cat ${RUNTIME_PATH}/configs | grep -i "livescript" | awk '{print $3}')
 
 	export PS1="\t \[\e[33m\]\w\[\e[m\] [node:\[\e[32m\]${NODE_VERSION}\[\e[m\] livscript:\[\e[36m\]${LS_VERSION}\[\e[m\]] [\$?]\n\\$ \[$(tput sgr0)\]"
+	export PATH=$PATH:${RC_ROOT}/scripts
 
 	export YRC_NODE_RUNTIME_PATH=${RUNTIME_PATH}
 	export YRC_NODE_RUNTIME=${NODE_RUMTIME_VERSION}

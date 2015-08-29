@@ -7,8 +7,9 @@ initiateVariables
 #
 [ -f "${RC_PROFILE}" ] && echo "already hooked" && exit 0
 
+NODE_RUNTIME=$1
 [ "" == "${NODE_RUNTIME}" ] && NODE_RUNTIME=$($(dirname $0)/nodejs_list_runtimes latest)
-[ "" == "$1" ] && MODULE_PROFILE="default" || MODULE_PROFILE=$1
+[ "" == "${MODULE_PROFILE}" ] && MODULE_PROFILE="default"
 
 VERSION=$(cat ${RC_NODE_RUNTIME_DIR}/${NODE_RUNTIME}/${RC_NODE_CONFIG_FILE} | grep "^nodejs" |  grep version | awk -F'\t' '{print $3}')
 
